@@ -13,12 +13,13 @@ interface Results {
   image: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement;
 }
 
-const GRAVITY = 0.0002; 
+// Physics Constants - Tuned for realism
+const GRAVITY = 0.00015; // Lowered gravity for floatier feel
 const BALL_RADIUS = 0.04;
-const HAND_RADIUS = 0.09;
+const HAND_RADIUS = 0.1; // Slightly larger catch radius
 // Increased threshold (more negative) means you must move hand UP faster to trigger throw
-const THROW_THRESHOLD = -0.05; 
-const THROW_COOLDOWN = 250; // Increased cooldown slightly to prevent double-throws
+const THROW_THRESHOLD = -0.08; 
+const THROW_COOLDOWN = 400; // Increased cooldown to prevent double-throws
 const MAX_STACK_HEIGHT = 4;
 
 const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateChange }) => {
@@ -189,9 +190,11 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
                 const ballToThrow = heldBalls[heldBalls.length - 1];
                 
                 ballToThrow.heldBy = null;
-                // Reduced multiplier to 0.3 because we now require higher input velocity to trigger
-                ballToThrow.vy = hand.vy * 0.3 - 0.002; 
-                ballToThrow.vx = hand.vx * 0.3; 
+                
+                // Physics: Transfer hand velocity to ball
+                // We use a lower multiplier (0.25) because the hand speed required to trigger (THRESHOLD) is higher.
+                ballToThrow.vy = hand.vy * 0.25 - 0.005; // -0.005 adds a little extra "pop"
+                ballToThrow.vx = hand.vx * 0.25; 
                 
                 // Add slight randomness to prevent robotic arcs
                 ballToThrow.vx += (Math.random() - 0.5) * 0.005;
