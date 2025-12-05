@@ -1,0 +1,8 @@
+{
+  "name": "Juggling Master AI",
+  "description": "A virtual juggling game powered by computer vision and AI coaching. Use your hands to keep virtual balls in the air!",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
