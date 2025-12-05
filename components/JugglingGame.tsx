@@ -13,12 +13,13 @@ interface Results {
   image: HTMLVideoElement | HTMLCanvasElement | HTMLImageElement;
 }
 
-const GRAVITY = 0.0002; // Reduced further to make balls float more
+const GRAVITY = 0.0002; 
 const BALL_RADIUS = 0.04;
 const HAND_RADIUS = 0.09;
-const THROW_THRESHOLD = -0.03; // Increased threshold: requires a faster flick to throw
-const THROW_COOLDOWN = 200; // ms between throws from the same hand
-const MAX_STACK_HEIGHT = 4; // Max balls visible in one hand stack
+// Increased threshold (more negative) means you must move hand UP faster to trigger throw
+const THROW_THRESHOLD = -0.05; 
+const THROW_COOLDOWN = 250; // Increased cooldown slightly to prevent double-throws
+const MAX_STACK_HEIGHT = 4;
 
 const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateChange }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -182,18 +183,17 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
 
         if (hand.isPresent && heldBalls.length > 0) {
             // Check for Throw Intent
-            // Logic: Hand moving up fast, and cooldown passed
+            // Logic: Hand moving up fast (vy is negative), and cooldown passed
             if (hand.vy < THROW_THRESHOLD && now - throwCooldowns.current[hName] > THROW_COOLDOWN) {
-                // Throw ONE ball (the one at the top of stack, or FIFO)
-                // Let's throw the one that was added last (top of visual stack)
+                // Throw ONE ball (the one at the top of stack)
                 const ballToThrow = heldBalls[heldBalls.length - 1];
                 
                 ballToThrow.heldBy = null;
-                // Significantly reduced throw force and sensitivity
-                ballToThrow.vy = hand.vy * 0.4 - 0.002; 
-                ballToThrow.vx = hand.vx * 0.4; // Reduced horizontal sensitivity too
+                // Reduced multiplier to 0.3 because we now require higher input velocity to trigger
+                ballToThrow.vy = hand.vy * 0.3 - 0.002; 
+                ballToThrow.vx = hand.vx * 0.3; 
                 
-                // Add spin/randomness
+                // Add slight randomness to prevent robotic arcs
                 ballToThrow.vx += (Math.random() - 0.5) * 0.005;
 
                 // Update cooldown
@@ -205,11 +205,8 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
             }
 
             // Position remaining held balls
-            // Re-fetch in case we just threw one
             const currentHeld = ballsRef.current.filter(b => b.heldBy === hName);
             currentHeld.forEach((ball, index) => {
-                // Stack them visually upwards
-                // Cap stack height visually so they don't go off screen if holding 10
                 const stackIndex = Math.min(index, MAX_STACK_HEIGHT);
                 const offset = stackIndex * (ball.radius * 1.2); 
                 
@@ -244,7 +241,6 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
 
         // Floor check (Respawn logic)
         if (ball.y > 1.2) {
-             // Respawn at top instead of dying
              respawnBall(ball);
         }
       }
@@ -260,7 +256,6 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     // Catch Radius
-    // Allow catching multiple.
     if (dist < (ball.radius + HAND_RADIUS / 2)) {
         // Only catch if ball is moving down or relatively still
         if (ball.vy > -0.01) { 
@@ -346,7 +341,6 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
   const startGame = () => {
     setScore(0);
     scoreRef.current = 0;
-    // Don't clear balls, just ensure we match target count logic in update
     setGameState(GameState.PLAYING);
     gameStateRef.current = GameState.PLAYING;
     propsRef.current.onGameStateChange(GameState.PLAYING);
@@ -426,8 +420,8 @@ const JugglingGame: React.FC<JugglingGameProps> = ({ onScoreUpdate, onGameStateC
                 <div className="absolute -inset-3 rounded-full bg-indigo-400 opacity-20 group-hover:opacity-40 blur-lg transition-opacity" />
             </button>
             <p className="text-gray-400 mt-6 text-sm max-w-xs text-center leading-relaxed">
-                Catch balls with your <strong>palms</strong>. You can hold multiple!<br/>
-                Flick up quickly to throw them <strong>one by one</strong>.
+                Catch balls with your <strong>palms</strong>.<br/>
+                Flick your hand <strong>UP firmly</strong> to throw!
             </p>
         </div>
       )}
